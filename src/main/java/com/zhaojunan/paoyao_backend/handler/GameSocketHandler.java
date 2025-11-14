@@ -12,7 +12,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class GameSocketHandler extends TextWebSocketHandler {
 
-    private final ObjectMapper mapper = new ObjectMapper();
     private final Set<WebSocketSession> sessions = ConcurrentHashMap.newKeySet();
 
     @Override
