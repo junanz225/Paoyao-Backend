@@ -12,7 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 public class PlayerListResponse {
 
-    private String type = "player_list";
+    private String type;
     private List<PlayerDto> payload;
 
 }

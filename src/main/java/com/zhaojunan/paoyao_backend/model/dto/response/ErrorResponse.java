@@ -10,7 +10,7 @@ import lombok.Data;
 @AllArgsConstructor
 public class ErrorResponse {
 
-    private String type = "error";
+    private String type;
     private String code;
     private String message;
 

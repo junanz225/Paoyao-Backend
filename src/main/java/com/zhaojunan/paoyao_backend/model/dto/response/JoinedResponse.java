@@ -10,7 +10,7 @@ import lombok.Data;
 @AllArgsConstructor
 public class JoinedResponse {
 
-    private String type = "joined";
+    private String type;
     private String playerId;
     private String playerName;
 
