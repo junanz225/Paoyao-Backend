@@ -1,6 +1,6 @@
 package com.zhaojunan.paoyao_backend.model.dto.response;
 
-import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 
 import java.util.List;
@@ -9,7 +9,7 @@ import java.util.List;
  * Response sent to all players when the game starts.
  */
 @Data
-@AllArgsConstructor
+@Builder
 public class GameStartResponse {
 
     private String type; // "game_start"

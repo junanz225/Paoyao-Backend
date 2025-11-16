@@ -73,11 +73,12 @@ public class GameSocketHandler extends TextWebSocketHandler {
         sessionPlayerMap.put(session.getId(), player);
 
         // Send joined response ONLY to this player
-        JoinedResponse joined = new JoinedResponse(
-                "joined",
-                player.getId().toString(),
-                player.getName()
-        );
+        JoinedResponse joined = JoinedResponse.builder()
+                .type("joined")
+                .playerId(player.getId().toString())
+                .playerName(player.getName())
+                .build();
+
         session.sendMessage(new TextMessage(mapper.writeValueAsString(joined)));
 
         // Broadcast updated player list
@@ -91,17 +92,20 @@ public class GameSocketHandler extends TextWebSocketHandler {
     }
 
     private void broadcastPlayerList() throws Exception {
-        PlayerListResponse list = new PlayerListResponse(
-                "playerList",
-                gameRoom.getPlayers().stream().map(PlayerMapper.INSTANCE::toDTO).toList()
-        );
+        PlayerListResponse list = PlayerListResponse.builder()
+                .type("player_list")
+                .payload(gameRoom.getPlayers().stream().map(PlayerMapper.INSTANCE::toDTO).toList())
+                .build();
 
         broadcast(list);
     }
 
     private void broadcastGameStart() throws Exception {
-        GameStartResponse res = new GameStartResponse("game_start",
-                gameRoom.getPlayers().stream().map(PlayerMapper.INSTANCE::toDTO).toList());
+        GameStartResponse res = GameStartResponse.builder()
+                .type("game_start")
+                .payload(gameRoom.getPlayers().stream().map(PlayerMapper.INSTANCE::toDTO).toList())
+                .build();
+
         broadcast(res);
     }
 
@@ -117,7 +121,10 @@ public class GameSocketHandler extends TextWebSocketHandler {
 
     private void sendError(WebSocketSession session, String msg) {
         try {
-            ErrorResponse err = new ErrorResponse("error", msg);
+            ErrorResponse err = ErrorResponse.builder()
+                    .type("error")
+                    .message(msg)
+                    .build();
             session.sendMessage(new TextMessage(mapper.writeValueAsString(err)));
         } catch (Exception ignored) {}
     }
