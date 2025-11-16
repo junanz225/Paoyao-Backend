@@ -13,6 +13,6 @@ import java.util.List;
 public class PlayerListResponse {
 
     private String type;
-    private List<PlayerDto> payload;
+    private List<PlayerDTO> payload;
 
 }

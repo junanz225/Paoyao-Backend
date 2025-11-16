@@ -11,6 +11,8 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 public class GameStartResponse {
-    private String type;
-    private List<PlayerDto> payload;
+
+    private String type; // "game_start"
+    private List<PlayerDTO> payload;
+
 }

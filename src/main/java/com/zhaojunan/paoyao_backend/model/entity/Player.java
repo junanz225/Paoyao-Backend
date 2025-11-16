@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.springframework.web.socket.WebSocketSession;
 
+import java.util.UUID;
+
 /**
  * Represents a player in the single Paoyao room.
  * - playerId: stable UUID used to identify the player (useful for logs/reconnect later)
@@ -16,7 +18,7 @@ import org.springframework.web.socket.WebSocketSession;
 @NoArgsConstructor
 public class Player {
 
-    private String playerId;
+    private UUID id;
     private String name;
     private WebSocketSession session;
 
