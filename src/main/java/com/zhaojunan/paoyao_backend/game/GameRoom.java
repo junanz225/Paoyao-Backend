@@ -1,5 +1,6 @@
 package com.zhaojunan.paoyao_backend.game;
 
+import com.zhaojunan.paoyao_backend.model.entity.Card;
 import com.zhaojunan.paoyao_backend.model.entity.Player;
 
 import java.util.ArrayList;
@@ -48,7 +49,13 @@ public class GameRoom {
     public synchronized void startGame() {
         if (isRoomFull() && !gameStarted) {
             gameStarted = true;
-            // dealing cards & game setup will happen later
+
+            Deck deck = new Deck();
+            deck.shuffle();
+            for (Player player : players) {
+                List<Card> hand = deck.deal(27);
+                player.setHand(hand);
+            }
         }
     }
 

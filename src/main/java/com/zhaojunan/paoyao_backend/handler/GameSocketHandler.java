@@ -61,7 +61,11 @@ public class GameSocketHandler extends TextWebSocketHandler {
         // Convert JSON to DTO
         JoinRequest req = mapper.convertValue(json, JoinRequest.class);
 
-        Player player = new Player(UUID.randomUUID(), req.getName(), session);
+        Player player = Player.builder()
+                .id(UUID.randomUUID())
+                .name(req.getName())
+                .session(session)
+                .build();
 
         boolean added = gameRoom.addPlayer(player);
         if (!added) {
