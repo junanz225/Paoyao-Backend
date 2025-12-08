@@ -5,6 +5,7 @@ import com.zhaojunan.paoyao_backend.game.GameManager;
 import com.zhaojunan.paoyao_backend.game.GameRoom;
 import com.zhaojunan.paoyao_backend.mapper.PlayerMapper;
 import com.zhaojunan.paoyao_backend.model.dto.request.JoinRequest;
+import com.zhaojunan.paoyao_backend.model.dto.response.DealCardsPayload;
 import com.zhaojunan.paoyao_backend.model.dto.response.PlayerDTO;
 import com.zhaojunan.paoyao_backend.model.dto.response.WebSocketMessage;
 import com.zhaojunan.paoyao_backend.model.entity.Player;
@@ -94,6 +95,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
         if (gameRoom.isRoomFull()) {
             gameRoom.startGame();
             broadcastGameStart();
+            sendDealCards();
         }
     }
 
@@ -117,6 +119,25 @@ public class GameSocketHandler extends TextWebSocketHandler {
                 .build();
 
         broadcast(playerList);
+    }
+
+    private void sendDealCards() throws Exception {
+        for (Player player : gameRoom.getPlayers()) {
+
+            DealCardsPayload payload = DealCardsPayload.builder()
+                    .playerId(player.getId().toString())
+                    .cards(player.getHand())
+                    .build();
+
+            WebSocketMessage<DealCardsPayload> msg =
+                    WebSocketMessage.<DealCardsPayload>builder()
+                            .type("deal_cards")
+                            .payload(payload)
+                            .build();
+
+            player.getSession()
+                    .sendMessage(new TextMessage(mapper.writeValueAsString(msg)));
+        }
     }
 
     private void broadcast(Object messageObj) throws Exception {
