@@ -5,10 +5,8 @@ import com.zhaojunan.paoyao_backend.game.GameManager;
 import com.zhaojunan.paoyao_backend.game.GameRoom;
 import com.zhaojunan.paoyao_backend.mapper.PlayerMapper;
 import com.zhaojunan.paoyao_backend.model.dto.request.JoinRequest;
-import com.zhaojunan.paoyao_backend.model.dto.response.ErrorResponse;
-import com.zhaojunan.paoyao_backend.model.dto.response.GameStartResponse;
-import com.zhaojunan.paoyao_backend.model.dto.response.JoinedResponse;
-import com.zhaojunan.paoyao_backend.model.dto.response.PlayerListResponse;
+import com.zhaojunan.paoyao_backend.model.dto.response.PlayerDTO;
+import com.zhaojunan.paoyao_backend.model.dto.response.WebSocketMessage;
 import com.zhaojunan.paoyao_backend.model.entity.Player;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
@@ -16,6 +14,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -77,10 +76,13 @@ public class GameSocketHandler extends TextWebSocketHandler {
         sessionPlayerMap.put(session.getId(), player);
 
         // Send joined response ONLY to this player
-        JoinedResponse joined = JoinedResponse.builder()
-                .type("joined")
+        PlayerDTO playerDto = PlayerDTO.builder()
                 .playerId(player.getId().toString())
                 .playerName(player.getName())
+                .build();
+        WebSocketMessage<PlayerDTO> joined = WebSocketMessage.<PlayerDTO>builder()
+                .type("joined")
+                .payload(playerDto)
                 .build();
 
         session.sendMessage(new TextMessage(mapper.writeValueAsString(joined)));
@@ -96,21 +98,25 @@ public class GameSocketHandler extends TextWebSocketHandler {
     }
 
     private void broadcastPlayerList() throws Exception {
-        PlayerListResponse list = PlayerListResponse.builder()
+        List<PlayerDTO> playerDtos = gameRoom.getPlayers().stream().map(PlayerMapper.INSTANCE::toDTO).toList();
+
+        WebSocketMessage<List<PlayerDTO>> playerList = WebSocketMessage.<List<PlayerDTO>>builder()
                 .type("player_list")
-                .payload(gameRoom.getPlayers().stream().map(PlayerMapper.INSTANCE::toDTO).toList())
+                .payload(playerDtos)
                 .build();
 
-        broadcast(list);
+        broadcast(playerList);
     }
 
     private void broadcastGameStart() throws Exception {
-        GameStartResponse res = GameStartResponse.builder()
+        List<PlayerDTO> playerDtos = gameRoom.getPlayers().stream().map(PlayerMapper.INSTANCE::toDTO).toList();
+
+        WebSocketMessage<List<PlayerDTO>> playerList = WebSocketMessage.<List<PlayerDTO>>builder()
                 .type("game_start")
-                .payload(gameRoom.getPlayers().stream().map(PlayerMapper.INSTANCE::toDTO).toList())
+                .payload(playerDtos)
                 .build();
 
-        broadcast(res);
+        broadcast(playerList);
     }
 
     private void broadcast(Object messageObj) throws Exception {
@@ -125,9 +131,9 @@ public class GameSocketHandler extends TextWebSocketHandler {
 
     private void sendError(WebSocketSession session, String msg) {
         try {
-            ErrorResponse err = ErrorResponse.builder()
+            WebSocketMessage<String> err =  WebSocketMessage.<String>builder()
                     .type("error")
-                    .message(msg)
+                    .payload(msg)
                     .build();
             session.sendMessage(new TextMessage(mapper.writeValueAsString(err)));
         } catch (Exception ignored) {}
