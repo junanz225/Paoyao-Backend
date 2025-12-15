@@ -42,7 +42,7 @@ public class Deck {
             cards.add(
                     Card.builder()
                             .type(CardType.JOKER)
-                            .jokerType(JokerType.SMALL)
+                            .jokerType(JokerType.BLACK)
                             .point(0)
                             .build()
             );
@@ -50,7 +50,7 @@ public class Deck {
             cards.add(
                     Card.builder()
                             .type(CardType.JOKER)
-                            .jokerType(JokerType.BIG)
+                            .jokerType(JokerType.RED)
                             .point(0)
                             .build()
             );

@@ -15,4 +15,12 @@ public class Card {
     private JokerType jokerType;
     private int point;
 
+    @Override
+    public String toString() {
+        if (type == CardType.JOKER) {
+            return jokerType.getFileName();
+        }
+        return rank.getValue() + "_of_" + suit.getValue();
+    }
+
 }

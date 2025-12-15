@@ -1,19 +1,28 @@
 package com.zhaojunan.paoyao_backend.model.enumeration;
 
+import lombok.Getter;
+
+@Getter
 public enum Rank {
 
-    A,
-    TWO,
-    THREE,
-    FOUR,
-    FIVE,
-    SIX,
-    SEVEN,
-    EIGHT,
-    NINE,
-    TEN,
-    J,
-    Q,
-    K
+    A("ace"),
+    TWO("2"),
+    THREE("3"),
+    FOUR("4"),
+    FIVE("5"),
+    SIX("6"),
+    SEVEN("7"),
+    EIGHT("8"),
+    NINE("9"),
+    TEN("10"),
+    J("jack"),
+    Q("queen"),
+    K("king");
+
+    private final String value;
+
+    Rank(String value) {
+        this.value = value;
+    }
 
 }

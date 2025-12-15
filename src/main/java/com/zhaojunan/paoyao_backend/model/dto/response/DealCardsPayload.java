@@ -11,6 +11,6 @@ import java.util.List;
 public class DealCardsPayload {
 
     private String playerId;
-    private List<Card> cards;
+    private List<String> cards;
 
 }

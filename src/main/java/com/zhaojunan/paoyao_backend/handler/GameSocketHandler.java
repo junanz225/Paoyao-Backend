@@ -9,6 +9,7 @@ import com.zhaojunan.paoyao_backend.model.dto.response.DealCardsPayload;
 import com.zhaojunan.paoyao_backend.model.dto.response.PlayerDTO;
 import com.zhaojunan.paoyao_backend.model.dto.response.WebSocketMessage;
 import com.zhaojunan.paoyao_backend.model.entity.Player;
+import com.zhaojunan.paoyao_backend.model.entity.Card;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -124,9 +125,14 @@ public class GameSocketHandler extends TextWebSocketHandler {
     private void sendDealCards() throws Exception {
         for (Player player : gameRoom.getPlayers()) {
 
+            List<String> cardKeys = player.getHand()
+                    .stream()
+                    .map(Card::toString)
+                    .toList();
+
             DealCardsPayload payload = DealCardsPayload.builder()
                     .playerId(player.getId().toString())
-                    .cards(player.getHand())
+                    .cards(cardKeys)
                     .build();
 
             WebSocketMessage<DealCardsPayload> msg =
