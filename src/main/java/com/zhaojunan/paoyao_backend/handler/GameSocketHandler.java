@@ -6,7 +6,9 @@ import com.zhaojunan.paoyao_backend.game.GameRoom;
 import com.zhaojunan.paoyao_backend.mapper.PlayerMapper;
 import com.zhaojunan.paoyao_backend.model.dto.request.JoinRequest;
 import com.zhaojunan.paoyao_backend.model.dto.response.DealCardsPayload;
+import com.zhaojunan.paoyao_backend.model.dto.response.GameStatePayload;
 import com.zhaojunan.paoyao_backend.model.dto.response.PlayerDTO;
+import com.zhaojunan.paoyao_backend.model.dto.response.PlayerStateDTO;
 import com.zhaojunan.paoyao_backend.model.dto.response.WebSocketMessage;
 import com.zhaojunan.paoyao_backend.model.entity.Player;
 import com.zhaojunan.paoyao_backend.model.entity.Card;
@@ -97,6 +99,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
             gameRoom.startGame();
             broadcastGameStart();
             sendDealCards();
+            broadcastGameState();
         }
     }
 
@@ -120,6 +123,29 @@ public class GameSocketHandler extends TextWebSocketHandler {
                 .build();
 
         broadcast(playerList);
+    }
+
+    private void broadcastGameState() throws Exception {
+        List<PlayerStateDTO> playerStates = gameRoom.getPlayers().stream()
+                .map(player -> PlayerStateDTO.builder()
+                        .playerId(player.getId().toString())
+                        .playerName(player.getName())
+                        .cardCount(player.getHand().size())
+                        .build()
+                )
+                .toList();
+
+        GameStatePayload gameStatePayload = GameStatePayload.builder()
+                .playerStates(playerStates)
+                .currentTurnPlayerId(null)
+                .build();
+
+        WebSocketMessage<GameStatePayload> gameState = WebSocketMessage.<GameStatePayload>builder()
+                .type("game_state")
+                .payload(gameStatePayload)
+                .build();
+
+        broadcast(gameState);
     }
 
     private void sendDealCards() throws Exception {
