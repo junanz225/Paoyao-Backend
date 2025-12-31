@@ -19,7 +19,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class JoinRequest {
 
-    private String type; // "join"
     private String name; // player display name
 
 }

@@ -5,8 +5,10 @@ import com.zhaojunan.paoyao_backend.model.enumeration.JokerType;
 import com.zhaojunan.paoyao_backend.model.enumeration.Rank;
 import com.zhaojunan.paoyao_backend.model.enumeration.Suit;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 
 @Builder
+@EqualsAndHashCode
 public class Card {
 
     private CardType type;

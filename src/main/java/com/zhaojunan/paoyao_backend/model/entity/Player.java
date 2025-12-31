@@ -27,4 +27,15 @@ public class Player {
     private WebSocketSession session;
     private List<Card> hand = new ArrayList<>();
 
+    public void removeCards(List<Card> cards) {
+        if (!hand.containsAll(cards)) {
+            throw new IllegalArgumentException("Invalid play: cards not in hand");
+        }
+        hand.removeAll(cards);
+    }
+
+    public int getHandSize() {
+        return hand.size();
+    }
+
 }

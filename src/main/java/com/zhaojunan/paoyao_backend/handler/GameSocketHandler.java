@@ -3,13 +3,15 @@ package com.zhaojunan.paoyao_backend.handler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zhaojunan.paoyao_backend.game.GameManager;
 import com.zhaojunan.paoyao_backend.game.GameRoom;
+import com.zhaojunan.paoyao_backend.mapper.CardMapper;
 import com.zhaojunan.paoyao_backend.mapper.PlayerMapper;
 import com.zhaojunan.paoyao_backend.model.dto.request.JoinRequest;
+import com.zhaojunan.paoyao_backend.model.dto.request.PlayCardRequest;
 import com.zhaojunan.paoyao_backend.model.dto.response.DealCardsPayload;
 import com.zhaojunan.paoyao_backend.model.dto.response.GameStatePayload;
 import com.zhaojunan.paoyao_backend.model.dto.response.PlayerDTO;
 import com.zhaojunan.paoyao_backend.model.dto.response.PlayerStateDTO;
-import com.zhaojunan.paoyao_backend.model.dto.response.WebSocketMessage;
+import com.zhaojunan.paoyao_backend.model.dto.WebSocketMessage;
 import com.zhaojunan.paoyao_backend.model.entity.Player;
 import com.zhaojunan.paoyao_backend.model.entity.Card;
 import org.springframework.stereotype.Component;
@@ -20,18 +22,18 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class GameSocketHandler extends TextWebSocketHandler {
 
     private final ObjectMapper mapper = new ObjectMapper();
+    private final PlayerMapper playerMapper;
+    private final CardMapper cardMapper = new CardMapper();
     private final GameRoom gameRoom;
-    private final Map<String, Player> sessionPlayerMap = new ConcurrentHashMap<>();
 
-    public GameSocketHandler(GameManager gameManager) {
+    public GameSocketHandler(GameManager gameManager, PlayerMapper playerMapper) {
         this.gameRoom = gameManager.getRoom();
+        this.playerMapper = playerMapper;
     }
 
     @Override
@@ -50,6 +52,9 @@ public class GameSocketHandler extends TextWebSocketHandler {
                 case "join":
                     handleJoin(session, json);
                     break;
+                case "play_card":
+                    handlePlayCard(session, json);
+                    break;
 
                 default:
                     sendError(session, "Unknown message type: " + type);
@@ -60,30 +65,32 @@ public class GameSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    private void handlePlayCard(WebSocketSession session, Map<String, Object> json) throws Exception {
+        // Convert JSON to DTO
+        PlayCardRequest request = mapper.convertValue(json, PlayCardRequest.class);
+
+        List<Card> playedCards = request.getPlayedCards().stream().map(cardMapper::mapToEntity).toList();
+        Player player = gameRoom.getPlayer(session);
+
+        player.removeCards(playedCards);
+
+        broadcastGameState();
+    }
+
     private void handleJoin(WebSocketSession session, Map<String, Object> json) throws Exception {
         // Convert JSON to DTO
-        JoinRequest req = mapper.convertValue(json, JoinRequest.class);
+        JoinRequest request = mapper.convertValue(json, JoinRequest.class);
 
-        Player player = Player.builder()
-                .id(UUID.randomUUID())
-                .name(req.getName())
-                .session(session)
-                .build();
-
-        boolean added = gameRoom.addPlayer(player);
+        boolean added = gameRoom.addPlayer(session, request.getName());
         if (!added) {
             sendError(session, "Room is full or game already started");
             return;
         }
 
-        // Track mapping
-        sessionPlayerMap.put(session.getId(), player);
+        Player player = gameRoom.getPlayer(session);
 
         // Send joined response ONLY to this player
-        PlayerDTO playerDto = PlayerDTO.builder()
-                .playerId(player.getId().toString())
-                .playerName(player.getName())
-                .build();
+        PlayerDTO playerDto = playerMapper.toDTO(player);
         WebSocketMessage<PlayerDTO> joined = WebSocketMessage.<PlayerDTO>builder()
                 .type("joined")
                 .payload(playerDto)
@@ -104,7 +111,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
     }
 
     private void broadcastPlayerList() throws Exception {
-        List<PlayerDTO> playerDtos = gameRoom.getPlayers().stream().map(PlayerMapper.INSTANCE::toDTO).toList();
+        List<PlayerDTO> playerDtos = gameRoom.getPlayers().stream().map(playerMapper::toDTO).toList();
 
         WebSocketMessage<List<PlayerDTO>> playerList = WebSocketMessage.<List<PlayerDTO>>builder()
                 .type("player_list")
@@ -115,7 +122,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
     }
 
     private void broadcastGameStart() throws Exception {
-        List<PlayerDTO> playerDtos = gameRoom.getPlayers().stream().map(PlayerMapper.INSTANCE::toDTO).toList();
+        List<PlayerDTO> playerDtos = gameRoom.getPlayers().stream().map(playerMapper::toDTO).toList();
 
         WebSocketMessage<List<PlayerDTO>> playerList = WebSocketMessage.<List<PlayerDTO>>builder()
                 .type("game_start")
@@ -130,7 +137,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
                 .map(player -> PlayerStateDTO.builder()
                         .playerId(player.getId().toString())
                         .playerName(player.getName())
-                        .cardCount(player.getHand().size())
+                        .cardCount(player.getHandSize())
                         .build()
                 )
                 .toList();
@@ -138,6 +145,8 @@ public class GameSocketHandler extends TextWebSocketHandler {
         GameStatePayload gameStatePayload = GameStatePayload.builder()
                 .playerStates(playerStates)
                 .currentTurnPlayerId(null)
+                .tableCards(gameRoom.getTableCards().stream().map(Card::toString).toList())
+                .tablePoints(gameRoom.getTablePoints())
                 .build();
 
         WebSocketMessage<GameStatePayload> gameState = WebSocketMessage.<GameStatePayload>builder()
@@ -194,10 +203,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-        Player p = sessionPlayerMap.remove(session.getId());
-        if (p != null) {
-            gameRoom.removePlayer(p);
-        }
+        gameRoom.removePlayer(session);
 
         try {
             broadcastPlayerList();

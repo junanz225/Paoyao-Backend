@@ -11,5 +11,7 @@ public class GameStatePayload {
 
     private List<PlayerStateDTO> playerStates;
     private String currentTurnPlayerId;
+    private List<String> tableCards;
+    private int tablePoints;
 
 }

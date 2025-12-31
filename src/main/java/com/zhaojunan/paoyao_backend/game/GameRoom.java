@@ -2,31 +2,54 @@ package com.zhaojunan.paoyao_backend.game;
 
 import com.zhaojunan.paoyao_backend.model.entity.Card;
 import com.zhaojunan.paoyao_backend.model.entity.Player;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.web.socket.WebSocketSession;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class GameRoom {
 
     private static final int MAX_PLAYERS = 4;
 
-    // The 4 players in the room
-    private final List<Player> players = new ArrayList<>();
+    // identity maps
+    private final Map<WebSocketSession, Player> sessionToPlayer = new HashMap<>();
+
+    @Getter
+    @Setter
+    private List<Card> tableCards = new ArrayList<>();
+
+    @Getter
+    @Setter
+    private int tablePoints = 0;
 
     // Game state flags
     private boolean gameStarted = false;
 
-    public synchronized boolean addPlayer(Player player) {
-        if (players.size() >= MAX_PLAYERS || gameStarted) {
-            return false; // room full or game already started
+    public synchronized boolean addPlayer(WebSocketSession session, String name) {
+        if (sessionToPlayer.size() >= MAX_PLAYERS || gameStarted) {
+            return false;
         }
-        players.add(player);
+
+        Player player = Player.builder()
+                .id(UUID.randomUUID())
+                .name(name)
+                .session(session)
+                .build();
+
+        sessionToPlayer.put(session, player);
+
         return true;
     }
 
-    public synchronized void removePlayer(Player player) {
-        players.remove(player);
+    public synchronized void removePlayer(WebSocketSession session) {
+        sessionToPlayer.remove(session);
 
         // If any player leaves, end/reset the game
         if (gameStarted) {
@@ -34,12 +57,17 @@ public class GameRoom {
         }
     }
 
-    public synchronized List<Player> getPlayers() {
-        return Collections.unmodifiableList(players);
+    public synchronized Player getPlayer(WebSocketSession session) {
+        return sessionToPlayer.get(session);
+    }
+
+
+    public synchronized Collection<Player> getPlayers() {
+        return Collections.unmodifiableCollection(sessionToPlayer.values());
     }
 
     public synchronized boolean isRoomFull() {
-        return players.size() == MAX_PLAYERS;
+        return sessionToPlayer.size() == MAX_PLAYERS;
     }
 
     public synchronized boolean hasStarted() {
@@ -52,16 +80,15 @@ public class GameRoom {
 
             Deck deck = new Deck();
             deck.shuffle();
-            for (Player player : players) {
-                List<Card> hand = deck.deal(27);
-                player.setHand(hand);
+            for (Player player : sessionToPlayer.values()) {
+                player.setHand(deck.deal(27));
             }
         }
     }
 
     public synchronized void resetGame() {
         gameStarted = false;
-        players.clear();
+        sessionToPlayer.clear();
     }
 
 }

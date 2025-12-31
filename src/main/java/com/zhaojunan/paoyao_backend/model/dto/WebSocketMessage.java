@@ -1,4 +1,4 @@
-package com.zhaojunan.paoyao_backend.model.dto.response;
+package com.zhaojunan.paoyao_backend.model.dto;
 
 import lombok.Builder;
 import lombok.Data;
