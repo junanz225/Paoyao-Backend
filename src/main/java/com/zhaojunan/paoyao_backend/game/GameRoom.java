@@ -23,7 +23,7 @@ public class GameRoom {
 
     @Getter
     @Setter
-    private List<Card> tableCards = new ArrayList<>();
+    private List<Card> table = new ArrayList<>();
 
     @Getter
     @Setter
@@ -72,6 +72,11 @@ public class GameRoom {
 
     public synchronized boolean hasStarted() {
         return gameStarted;
+    }
+
+    public synchronized void addToTable(List<Card> cards) {
+        table.clear();
+        table.addAll(cards);
     }
 
     public synchronized void startGame() {

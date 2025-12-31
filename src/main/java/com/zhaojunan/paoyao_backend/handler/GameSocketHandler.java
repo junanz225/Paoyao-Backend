@@ -2,7 +2,6 @@ package com.zhaojunan.paoyao_backend.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zhaojunan.paoyao_backend.game.GameManager;
-import com.zhaojunan.paoyao_backend.game.GameRoom;
 import com.zhaojunan.paoyao_backend.mapper.CardMapper;
 import com.zhaojunan.paoyao_backend.mapper.PlayerMapper;
 import com.zhaojunan.paoyao_backend.model.dto.request.JoinRequest;
@@ -29,10 +28,10 @@ public class GameSocketHandler extends TextWebSocketHandler {
     private final ObjectMapper mapper = new ObjectMapper();
     private final PlayerMapper playerMapper;
     private final CardMapper cardMapper = new CardMapper();
-    private final GameRoom gameRoom;
+    private final GameManager gameManager;
 
     public GameSocketHandler(GameManager gameManager, PlayerMapper playerMapper) {
-        this.gameRoom = gameManager.getRoom();
+        this.gameManager = gameManager;
         this.playerMapper = playerMapper;
     }
 
@@ -70,9 +69,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
         PlayCardRequest request = mapper.convertValue(json, PlayCardRequest.class);
 
         List<Card> playedCards = request.getPlayedCards().stream().map(cardMapper::mapToEntity).toList();
-        Player player = gameRoom.getPlayer(session);
-
-        player.removeCards(playedCards);
+        gameManager.playCards(session, playedCards);
 
         broadcastGameState();
     }
@@ -81,15 +78,14 @@ public class GameSocketHandler extends TextWebSocketHandler {
         // Convert JSON to DTO
         JoinRequest request = mapper.convertValue(json, JoinRequest.class);
 
-        boolean added = gameRoom.addPlayer(session, request.getName());
-        if (!added) {
+        Player player = gameManager.join(session, request.getName());
+
+        if (player == null) {
             sendError(session, "Room is full or game already started");
             return;
         }
 
-        Player player = gameRoom.getPlayer(session);
-
-        // Send joined response ONLY to this player
+        // Send joined response
         PlayerDTO playerDto = playerMapper.toDTO(player);
         WebSocketMessage<PlayerDTO> joined = WebSocketMessage.<PlayerDTO>builder()
                 .type("joined")
@@ -97,13 +93,10 @@ public class GameSocketHandler extends TextWebSocketHandler {
                 .build();
 
         session.sendMessage(new TextMessage(mapper.writeValueAsString(joined)));
-
-        // Broadcast updated player list
         broadcastPlayerList();
 
-        // Auto-start when 4 players join
-        if (gameRoom.isRoomFull()) {
-            gameRoom.startGame();
+        if (gameManager.getRoom().isRoomFull()) {
+            gameManager.getRoom().startGame();
             broadcastGameStart();
             sendDealCards();
             broadcastGameState();
@@ -111,7 +104,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
     }
 
     private void broadcastPlayerList() throws Exception {
-        List<PlayerDTO> playerDtos = gameRoom.getPlayers().stream().map(playerMapper::toDTO).toList();
+        List<PlayerDTO> playerDtos = gameManager.getPlayers().stream().map(playerMapper::toDTO).toList();
 
         WebSocketMessage<List<PlayerDTO>> playerList = WebSocketMessage.<List<PlayerDTO>>builder()
                 .type("player_list")
@@ -122,7 +115,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
     }
 
     private void broadcastGameStart() throws Exception {
-        List<PlayerDTO> playerDtos = gameRoom.getPlayers().stream().map(playerMapper::toDTO).toList();
+        List<PlayerDTO> playerDtos = gameManager.getPlayers().stream().map(playerMapper::toDTO).toList();
 
         WebSocketMessage<List<PlayerDTO>> playerList = WebSocketMessage.<List<PlayerDTO>>builder()
                 .type("game_start")
@@ -133,7 +126,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
     }
 
     private void broadcastGameState() throws Exception {
-        List<PlayerStateDTO> playerStates = gameRoom.getPlayers().stream()
+        List<PlayerStateDTO> playerStates = gameManager.getPlayers().stream()
                 .map(player -> PlayerStateDTO.builder()
                         .playerId(player.getId().toString())
                         .playerName(player.getName())
@@ -145,8 +138,8 @@ public class GameSocketHandler extends TextWebSocketHandler {
         GameStatePayload gameStatePayload = GameStatePayload.builder()
                 .playerStates(playerStates)
                 .currentTurnPlayerId(null)
-                .tableCards(gameRoom.getTableCards().stream().map(Card::toString).toList())
-                .tablePoints(gameRoom.getTablePoints())
+                .table(gameManager.getRoom().getTable().stream().map(Card::toString).toList())
+                .tablePoints(gameManager.getRoom().getTablePoints())
                 .build();
 
         WebSocketMessage<GameStatePayload> gameState = WebSocketMessage.<GameStatePayload>builder()
@@ -158,7 +151,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
     }
 
     private void sendDealCards() throws Exception {
-        for (Player player : gameRoom.getPlayers()) {
+        for (Player player : gameManager.getPlayers()) {
 
             List<String> cardKeys = player.getHand()
                     .stream()
@@ -184,7 +177,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
     private void broadcast(Object messageObj) throws Exception {
         String json = mapper.writeValueAsString(messageObj);
 
-        for (Player p : gameRoom.getPlayers()) {
+        for (Player p : gameManager.getPlayers()) {
             if (p.getSession().isOpen()) {
                 p.getSession().sendMessage(new TextMessage(json));
             }
@@ -203,7 +196,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-        gameRoom.removePlayer(session);
+        gameManager.leave(session);
 
         try {
             broadcastPlayerList();
