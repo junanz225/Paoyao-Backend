@@ -46,13 +46,23 @@ public class GameSocketHandler extends TextWebSocketHandler {
             // Parse incoming JSON
             Map<String, Object> json = mapper.readValue(message.getPayload(), Map.class);
             String type = (String) json.get("type");
+            if (type == null) {
+                sendError(session, "Missing message type");
+                return;
+            }
+
+            Object payloadObj = json.get("payload");
+            Map<String, Object> payload =
+                    payloadObj instanceof Map
+                            ? (Map<String, Object>) payloadObj
+                            : Map.of();
 
             switch (type) {
                 case "join":
-                    handleJoin(session, json);
+                    handleJoin(session, payload);
                     break;
                 case "play_card":
-                    handlePlayCard(session, json);
+                    handlePlayCard(session, payload);
                     break;
 
                 default:
