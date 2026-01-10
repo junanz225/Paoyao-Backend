@@ -22,6 +22,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Component
 public class GameSocketHandler extends TextWebSocketHandler {
@@ -146,9 +147,13 @@ public class GameSocketHandler extends TextWebSocketHandler {
                 )
                 .toList();
 
+
         TableStateDTO tableState = TableStateDTO.builder()
                 .lastPlayedPlayerId(
-                        gameManager.getRoom().getLastPlayedPlayerId().toString()
+                        Objects.toString(
+                                gameManager.getRoom().getLastPlayedPlayerId(),
+                                null
+                        )
                 )
                 .cards(
                         gameManager.getRoom()
