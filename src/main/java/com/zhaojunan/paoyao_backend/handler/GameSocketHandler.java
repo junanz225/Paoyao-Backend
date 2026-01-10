@@ -11,6 +11,7 @@ import com.zhaojunan.paoyao_backend.model.dto.response.GameStatePayload;
 import com.zhaojunan.paoyao_backend.model.dto.response.PlayerDTO;
 import com.zhaojunan.paoyao_backend.model.dto.response.PlayerStateDTO;
 import com.zhaojunan.paoyao_backend.model.dto.WebSocketMessage;
+import com.zhaojunan.paoyao_backend.model.dto.response.TableStateDTO;
 import com.zhaojunan.paoyao_backend.model.entity.Player;
 import com.zhaojunan.paoyao_backend.model.entity.Card;
 import org.springframework.stereotype.Component;
@@ -145,10 +146,23 @@ public class GameSocketHandler extends TextWebSocketHandler {
                 )
                 .toList();
 
+        TableStateDTO tableState = TableStateDTO.builder()
+                .lastPlayedPlayerId(
+                        gameManager.getRoom().getLastPlayedPlayerId().toString()
+                )
+                .cards(
+                        gameManager.getRoom()
+                                .getTable()
+                                .stream()
+                                .map(Card::toString)
+                                .toList()
+                )
+                .build();
+
         GameStatePayload gameStatePayload = GameStatePayload.builder()
                 .playerStates(playerStates)
                 .currentTurnPlayerId(null)
-                .table(gameManager.getRoom().getTable().stream().map(Card::toString).toList())
+                .tableState(tableState)
                 .tablePoints(gameManager.getRoom().getTablePoints())
                 .build();
 

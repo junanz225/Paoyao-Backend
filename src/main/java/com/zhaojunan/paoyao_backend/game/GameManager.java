@@ -31,6 +31,7 @@ public class GameManager {
         // TODO: add turn/phase validation here
         player.removeCards(cards);   // delegate to Player
         room.addToTable(cards);      // a new method to track table cards
+        room.setLastPlayedPlayerId(player.getId());
     }
 
     public Collection<Player> getPlayers() {

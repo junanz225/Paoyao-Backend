@@ -23,6 +23,10 @@ public class GameRoom {
 
     @Getter
     @Setter
+    private UUID lastPlayedPlayerId;
+
+    @Getter
+    @Setter
     private List<Card> table = new ArrayList<>();
 
     @Getter
