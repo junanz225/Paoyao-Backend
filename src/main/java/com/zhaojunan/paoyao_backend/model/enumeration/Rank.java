@@ -2,6 +2,8 @@ package com.zhaojunan.paoyao_backend.model.enumeration;
 
 import lombok.Getter;
 
+import java.util.Arrays;
+
 @Getter
 public enum Rank {
 
@@ -23,6 +25,13 @@ public enum Rank {
 
     Rank(String value) {
         this.value = value;
+    }
+
+    public static Rank fromValue(String value) {
+        return Arrays.stream(values())
+                .filter(r -> r.getValue().equals(value))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Invalid rank: " + value));
     }
 
 }

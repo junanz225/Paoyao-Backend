@@ -13,7 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 public class PlayCardRequest {
 
-//    private String type; // "play_card"
+//    private String type; // "play_cards"
     private List<String> playedCards;
 
 }

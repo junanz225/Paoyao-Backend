@@ -2,7 +2,6 @@ package com.zhaojunan.paoyao_backend.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zhaojunan.paoyao_backend.game.GameManager;
-import com.zhaojunan.paoyao_backend.mapper.CardMapper;
 import com.zhaojunan.paoyao_backend.mapper.PlayerMapper;
 import com.zhaojunan.paoyao_backend.model.dto.request.JoinRequest;
 import com.zhaojunan.paoyao_backend.model.dto.request.PlayCardRequest;
@@ -14,6 +13,7 @@ import com.zhaojunan.paoyao_backend.model.dto.WebSocketMessage;
 import com.zhaojunan.paoyao_backend.model.dto.response.TableStateDTO;
 import com.zhaojunan.paoyao_backend.model.entity.Player;
 import com.zhaojunan.paoyao_backend.model.entity.Card;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -25,11 +25,11 @@ import java.util.Map;
 import java.util.Objects;
 
 @Component
+@Slf4j
 public class GameSocketHandler extends TextWebSocketHandler {
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final PlayerMapper playerMapper;
-    private final CardMapper cardMapper = new CardMapper();
     private final GameManager gameManager;
 
     public GameSocketHandler(GameManager gameManager, PlayerMapper playerMapper) {
@@ -63,7 +63,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
                 case "join":
                     handleJoin(session, payload);
                     break;
-                case "play_card":
+                case "play_cards":
                     handlePlayCard(session, payload);
                     break;
 
@@ -72,6 +72,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
             }
 
         } catch (Exception e) {
+            log.error(e.getMessage());
             sendError(session, "Invalid message format: " + e.getMessage());
         }
     }
@@ -80,7 +81,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
         // Convert JSON to DTO
         PlayCardRequest request = mapper.convertValue(json, PlayCardRequest.class);
 
-        List<Card> playedCards = request.getPlayedCards().stream().map(cardMapper::mapToEntity).toList();
+        List<Card> playedCards = request.getPlayedCards().stream().map(Card::fromString).toList();
         gameManager.playCards(session, playedCards);
 
         broadcastGameState();
