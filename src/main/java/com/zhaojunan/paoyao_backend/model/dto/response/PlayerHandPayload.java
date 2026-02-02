@@ -7,7 +7,7 @@ import java.util.List;
 
 @Data
 @Builder
-public class DealCardsPayload {
+public class PlayerHandPayload {
 
     private String playerId;
     private List<String> cards;

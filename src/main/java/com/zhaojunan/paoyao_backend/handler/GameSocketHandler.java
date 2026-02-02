@@ -5,7 +5,7 @@ import com.zhaojunan.paoyao_backend.game.GameManager;
 import com.zhaojunan.paoyao_backend.mapper.PlayerMapper;
 import com.zhaojunan.paoyao_backend.model.dto.request.JoinRequest;
 import com.zhaojunan.paoyao_backend.model.dto.request.PlayCardRequest;
-import com.zhaojunan.paoyao_backend.model.dto.response.DealCardsPayload;
+import com.zhaojunan.paoyao_backend.model.dto.response.PlayerHandPayload;
 import com.zhaojunan.paoyao_backend.model.dto.response.GameStatePayload;
 import com.zhaojunan.paoyao_backend.model.dto.response.PlayerDTO;
 import com.zhaojunan.paoyao_backend.model.dto.response.PlayerStateDTO;
@@ -39,7 +39,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
-        System.out.println("New connection: " + session.getId());
+        log.info("New connection: {}", session.getId());
     }
 
     @Override
@@ -82,7 +82,9 @@ public class GameSocketHandler extends TextWebSocketHandler {
         PlayCardRequest request = mapper.convertValue(json, PlayCardRequest.class);
 
         List<Card> playedCards = request.getPlayedCards().stream().map(Card::fromString).toList();
-        gameManager.playCards(session, playedCards);
+        Player player = gameManager.playCards(session, playedCards);
+
+        sendHandUpdate(player);
 
         broadcastGameState();
     }
@@ -188,13 +190,13 @@ public class GameSocketHandler extends TextWebSocketHandler {
                     .map(Card::toString)
                     .toList();
 
-            DealCardsPayload payload = DealCardsPayload.builder()
+            PlayerHandPayload payload = PlayerHandPayload.builder()
                     .playerId(player.getId().toString())
                     .cards(cardKeys)
                     .build();
 
-            WebSocketMessage<DealCardsPayload> msg =
-                    WebSocketMessage.<DealCardsPayload>builder()
+            WebSocketMessage<PlayerHandPayload> msg =
+                    WebSocketMessage.<PlayerHandPayload>builder()
                             .type("deal_cards")
                             .payload(payload)
                             .build();
@@ -202,6 +204,27 @@ public class GameSocketHandler extends TextWebSocketHandler {
             player.getSession()
                     .sendMessage(new TextMessage(mapper.writeValueAsString(msg)));
         }
+    }
+
+    private void sendHandUpdate(Player player) throws Exception {
+        List<String> cardKeys = player.getHand()
+                .stream()
+                .map(Card::toString)
+                .toList();
+
+        PlayerHandPayload payload = PlayerHandPayload.builder()
+                .playerId(player.getId().toString())
+                .cards(cardKeys)
+                .build();
+
+        WebSocketMessage<PlayerHandPayload> msg =
+                WebSocketMessage.<PlayerHandPayload>builder()
+                        .type("hand_update")
+                        .payload(payload)
+                        .build();
+
+        player.getSession()
+                .sendMessage(new TextMessage(mapper.writeValueAsString(msg)));
     }
 
     private void broadcast(Object messageObj) throws Exception {

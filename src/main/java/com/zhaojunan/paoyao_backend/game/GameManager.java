@@ -26,12 +26,13 @@ public class GameManager {
         room.removePlayer(session);
     }
 
-    public void playCards(WebSocketSession session, List<Card> cards) {
+    public Player playCards(WebSocketSession session, List<Card> cards) {
         Player player = room.getPlayer(session);
         // TODO: add turn/phase validation here
         player.removeCards(cards);   // delegate to Player
         room.addToTable(cards);      // a new method to track table cards
         room.setLastPlayedPlayerId(player.getId());
+        return player;
     }
 
     public Collection<Player> getPlayers() {

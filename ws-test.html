@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Paoyao WebSocket Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        #log { white-space: pre-wrap; background: #f4f4f4; padding: 10px; border-radius: 6px; height: 300px; overflow-y: auto; }
+        input, button { margin: 5px 0; }
+    </style>
+</head>
+<body>
+
+<h2>Paoyao WebSocket Test Client</h2>
+
+<div>
+    <label>WebSocket URL:</label>
+    <input type="text" id="wsUrl" value="ws://localhost:8080/ws/paoyao" size="40">
+    <br>
+    <button onclick="connectWS()">Connect</button>
+    <button onclick="disconnectWS()">Disconnect</button>
+</div>
+
+<hr>
+
+<div>
+    <h3>Join Room</h3>
+
+    <label>Name:</label><br>
+    <input type="text" id="playerName" value="Alice"><br>
+
+    <button onclick="sendJoin()">Send Join</button>
+</div>
+
+<hr>
+
+<h3>Log</h3>
+<div id="log"></div>
+
+<script>
+    let socket;
+
+    function connectWS() {
+        const url = document.getElementById("wsUrl").value;
+        socket = new WebSocket(url);
+
+        socket.onopen = () => log("Connected to " + url);
+        socket.onmessage = (event) => log("⬅️ " + event.data);
+        socket.onclose = () => log("Disconnected");
+        socket.onerror = (e) => log("❗ WebSocket error: " + e);
+    }
+
+    function disconnectWS() {
+        if (socket) socket.close();
+    }
+
+    function sendJoin() {
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+            log("❗ WebSocket is not connected");
+            return;
+        }
+
+        const msg = {
+            type: "join",
+            name: document.getElementById("playerName").value
+        };
+
+        socket.send(JSON.stringify(msg));
+        log("➡️ Sent: " + JSON.stringify(msg));
+    }
+
+    function log(msg) {
+        const logBox = document.getElementById("log");
+        logBox.textContent += msg + "\n";
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+</script>
+
+</body>
+</html>
