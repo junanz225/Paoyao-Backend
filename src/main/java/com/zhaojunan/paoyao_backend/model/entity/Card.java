@@ -35,7 +35,7 @@ public class Card {
             return Card.builder()
                     .type(CardType.JOKER)
                     .jokerType(JokerType.fromFileName(value))
-                    .point(20)
+                    .point(0)
                     .build();
         }
 
@@ -48,10 +48,17 @@ public class Card {
         Rank rank = Rank.fromValue(parts[0]);
         Suit suit = Suit.fromValue(parts[1]);
 
+        int point = switch (rank) {
+            case FIVE -> 5;
+            case TEN, K -> 10;
+            default -> 0;
+        };
+
         return Card.builder()
                 .type(CardType.STANDARD)
                 .rank(rank)
                 .suit(suit)
+                .point(point)
                 .build();
     }
 
