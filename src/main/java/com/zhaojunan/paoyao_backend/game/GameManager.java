@@ -45,20 +45,11 @@ public class GameManager {
             room.addToTable(cards);
             room.setLastPlayedPlayerId(player.getId());
 
-            player.removeCards(cards);      // may throw
-            room.addToTable(cards);
-            room.setLastPlayedPlayerId(player.getId());
-
             return player;
 
-        } catch (IllegalArgumentException e) {
-            log.error("Invalid play: {}", e.getMessage());
-            sendError(session, e.getMessage());
-            return null;
-
         } catch (Exception e) {
-            log.error("Unexpected error in playCards", e);
-            sendError(session, "Internal error: " + e.getMessage());
+            log.error(e.getMessage());
+            sendError(session, e.getMessage());
             return null;
         }
     }
@@ -72,7 +63,7 @@ public class GameManager {
             session.sendMessage(
                     new TextMessage(errorJson(message))
             );
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("Failed to send error message", e);
         }
     }
