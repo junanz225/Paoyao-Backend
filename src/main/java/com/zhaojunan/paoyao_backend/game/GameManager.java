@@ -9,7 +9,6 @@ import org.springframework.web.socket.WebSocketSession;
 
 import com.zhaojunan.paoyao_backend.model.entity.Card;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 
