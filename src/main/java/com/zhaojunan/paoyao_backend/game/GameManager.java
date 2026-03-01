@@ -2,15 +2,19 @@ package com.zhaojunan.paoyao_backend.game;
 
 import com.zhaojunan.paoyao_backend.model.entity.Player;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import com.zhaojunan.paoyao_backend.model.entity.Card;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 
 @Component
+@Slf4j
 public class GameManager {
 
     @Getter
@@ -28,15 +32,54 @@ public class GameManager {
 
     public Player playCards(WebSocketSession session, List<Card> cards) {
         Player player = room.getPlayer(session);
-        // TODO: add turn/phase validation here
-        player.removeCards(cards);   // delegate to Player
-        room.addToTable(cards);      // a new method to track table cards
-        room.setLastPlayedPlayerId(player.getId());
-        return player;
+        if (player == null) {
+            log.error("Player not found for session: {}", session.getId());
+            sendError(session, "Player not found");
+            return null;
+        }
+
+        try {
+            // TODO: add turn/phase validation here
+
+            player.removeCards(cards);
+            room.addToTable(cards);
+            room.setLastPlayedPlayerId(player.getId());
+
+            player.removeCards(cards);      // may throw
+            room.addToTable(cards);
+            room.setLastPlayedPlayerId(player.getId());
+
+            return player;
+
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid play: {}", e.getMessage());
+            sendError(session, e.getMessage());
+            return null;
+
+        } catch (Exception e) {
+            log.error("Unexpected error in playCards", e);
+            sendError(session, "Internal error: " + e.getMessage());
+            return null;
+        }
     }
 
     public Collection<Player> getPlayers() {
         return room.getPlayers();
+    }
+
+    private void sendError(WebSocketSession session, String message) {
+        try {
+            session.sendMessage(
+                    new TextMessage(errorJson(message))
+            );
+        } catch (IOException e) {
+            log.error("Failed to send error message", e);
+        }
+    }
+
+    private String errorJson(String message) {
+        // Simple JSON for the frontend
+        return String.format("{\"type\":\"error\",\"payload\":\"%s\"}", message);
     }
 
 }
