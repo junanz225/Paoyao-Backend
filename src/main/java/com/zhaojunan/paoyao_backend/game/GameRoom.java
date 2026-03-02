@@ -86,7 +86,7 @@ public class GameRoom {
     public synchronized void startGame() {
         if (isRoomFull() && !gameStarted) {
             gameStarted = true;
-
+            table.clear();
             Deck deck = new Deck();
             deck.shuffle();
             for (Player player : sessionToPlayer.values()) {
