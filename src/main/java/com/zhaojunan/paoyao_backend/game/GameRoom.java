@@ -18,26 +18,45 @@ public class GameRoom {
 
     private static final int MAX_PLAYERS = 4;
 
-    // identity maps
-    private final Map<WebSocketSession, Player> sessionToPlayer = new HashMap<>();
+    // Primary store — keyed by stable player ID
+    private final Map<UUID, Player> idToPlayer = new HashMap<>();
 
-    @Getter
-    @Setter
+    // Lookup index — maps live session → player ID
+    private final Map<WebSocketSession, UUID> sessionToId = new HashMap<>();
+
+    @Getter @Setter
     private UUID lastPlayedPlayerId;
 
-    @Getter
-    @Setter
+    @Getter @Setter
     private List<Card> table = new ArrayList<>();
 
-    @Getter
-    @Setter
+    @Getter @Setter
     private int tablePoints = 0;
 
-    // Game state flags
     private boolean gameStarted = false;
 
+    // -------------------------------------------------------------------------
+    // Player lifecycle
+    // -------------------------------------------------------------------------
+
     public synchronized boolean addPlayer(WebSocketSession session, String name) {
-        if (sessionToPlayer.size() >= MAX_PLAYERS || gameStarted) {
+        if (gameStarted) {
+            // Game is running — only allow reconnect by matching name
+            for (Player p : idToPlayer.values()) {
+                if (p.getName().equals(name)) {
+                    // Swap in the new session, discard the old one
+                    sessionToId.remove(p.getSession());
+                    p.setSession(session);
+                    sessionToId.put(session, p.getId());
+                    return true;
+                }
+            }
+            // Unknown name while game is running — reject
+            return false;
+        }
+
+        // Pre-game: normal join
+        if (idToPlayer.size() >= MAX_PLAYERS) {
             return false;
         }
 
@@ -47,31 +66,41 @@ public class GameRoom {
                 .session(session)
                 .build();
 
-        sessionToPlayer.put(session, player);
+        idToPlayer.put(player.getId(), player);
+        sessionToId.put(session, player.getId());
 
         return true;
     }
 
     public synchronized void removePlayer(WebSocketSession session) {
-        sessionToPlayer.remove(session);
+        UUID id = sessionToId.remove(session);
 
-        // If any player leaves, end/reset the game
-        if (gameStarted) {
-            resetGame();
+        if (!gameStarted) {
+            // Pre-game disconnect — fully remove the player
+            if (id != null) {
+                idToPlayer.remove(id);
+            }
         }
+        // Mid-game disconnect — keep the player's hand/state intact,
+        // just drop the session reference so they can reconnect later
     }
 
     public synchronized Player getPlayer(WebSocketSession session) {
-        return sessionToPlayer.get(session);
+        UUID id = sessionToId.get(session);
+        if (id == null) return null;
+        return idToPlayer.get(id);
     }
-
 
     public synchronized Collection<Player> getPlayers() {
-        return Collections.unmodifiableCollection(sessionToPlayer.values());
+        return Collections.unmodifiableCollection(idToPlayer.values());
     }
 
+    // -------------------------------------------------------------------------
+    // Room / game state
+    // -------------------------------------------------------------------------
+
     public synchronized boolean isRoomFull() {
-        return sessionToPlayer.size() == MAX_PLAYERS;
+        return idToPlayer.size() == MAX_PLAYERS;
     }
 
     public synchronized boolean hasStarted() {
@@ -89,7 +118,7 @@ public class GameRoom {
             table.clear();
             Deck deck = new Deck();
             deck.shuffle();
-            for (Player player : sessionToPlayer.values()) {
+            for (Player player : idToPlayer.values()) {
                 player.setHand(deck.deal(27));
             }
         }
@@ -97,7 +126,10 @@ public class GameRoom {
 
     public synchronized void resetGame() {
         gameStarted = false;
-        sessionToPlayer.clear();
+        idToPlayer.clear();
+        sessionToId.clear();
+        table.clear();
+        tablePoints = 0;
+        lastPlayedPlayerId = null;
     }
-
 }
