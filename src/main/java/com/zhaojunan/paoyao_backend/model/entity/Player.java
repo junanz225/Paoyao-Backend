@@ -28,10 +28,16 @@ public class Player {
     private List<Card> hand = new ArrayList<>();
 
     public void removeCards(List<Card> cards) {
-        if (!hand.containsAll(cards)) {
-            throw new IllegalArgumentException("Invalid play: cards not in hand");
+        List<Card> mutableHand = new ArrayList<>(hand);
+
+        for (Card card : cards) {
+            boolean removed = mutableHand.remove(card); // removes only first match
+            if (!removed) {
+                throw new IllegalArgumentException("Invalid play: card not in hand: " + card);
+            }
         }
-        hand.removeAll(cards);
+
+        hand = mutableHand;
     }
 
     public int getHandSize() {
