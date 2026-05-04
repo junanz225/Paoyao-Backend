@@ -72,7 +72,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
             }
 
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error("Error handling message", e);
             sendError(session, "Invalid message format: " + e.getMessage());
         }
     }
