@@ -1,5 +1,6 @@
 package com.zhaojunan.paoyao_backend.game;
 
+import com.zhaojunan.paoyao_backend.exception.GameActionException;
 import com.zhaojunan.paoyao_backend.model.entity.Player;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -30,24 +31,29 @@ public class GameManager {
     }
 
     public Player playCards(WebSocketSession session, List<Card> cards) {
-        Player player = room.getPlayer(session);
-        if (player == null) {
-            log.error("Player not found for session: {}", session.getId());
-            sendError(session, "Player not found");
-            return null;
-        }
-
         try {
-            // TODO: add turn/phase validation here
-
+            Player player = validateTurn(session);
             player.removeCards(cards);
             room.addToTable(cards);
             room.setLastPlayedPlayerId(player.getId());
+            room.advanceTurn();
 
             return player;
 
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error("PlayCards failed: {}", e.getMessage());
+            sendError(session, e.getMessage());
+            return null;
+        }
+    }
+
+    public Player pass(WebSocketSession session) {
+        try {
+            Player player = validateTurn(session);
+            room.advanceTurn();
+            return player;
+        } catch (Exception e) {
+            log.error("Pass failed: {}", e.getMessage());
             sendError(session, e.getMessage());
             return null;
         }
@@ -55,6 +61,19 @@ public class GameManager {
 
     public Collection<Player> getPlayers() {
         return room.getPlayers();
+    }
+
+    private Player validateTurn(WebSocketSession session) {
+        Player player = room.getPlayer(session);
+        if (player == null) {
+            log.error("Player not found for session: {}", session.getId());
+            throw new GameActionException("Player not found");
+        }
+        if (!room.getCurrentPlayerId().equals(player.getId())) {
+            log.error("Not {}'s turn", player.getName());
+            throw new GameActionException("Not your turn");
+        }
+        return player;
     }
 
     private void sendError(WebSocketSession session, String message) {

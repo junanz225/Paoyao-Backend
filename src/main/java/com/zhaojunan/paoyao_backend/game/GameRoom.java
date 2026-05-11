@@ -24,6 +24,11 @@ public class GameRoom {
     // Lookup index — maps live session → player ID
     private final Map<WebSocketSession, UUID> sessionToId = new HashMap<>();
 
+    private final List<UUID> seatOrder = new ArrayList<>(); // stable turn order
+
+    @Getter @Setter
+    private UUID currentPlayerId;
+
     @Getter @Setter
     private UUID lastPlayedPlayerId;
 
@@ -68,6 +73,7 @@ public class GameRoom {
 
         idToPlayer.put(player.getId(), player);
         sessionToId.put(session, player.getId());
+        seatOrder.add(player.getId());
 
         return true;
     }
@@ -121,7 +127,14 @@ public class GameRoom {
             for (Player player : idToPlayer.values()) {
                 player.setHand(deck.deal(27));
             }
+            currentPlayerId = seatOrder.get(0);
         }
+    }
+
+    public synchronized void advanceTurn() {
+        int currentIndex = seatOrder.indexOf(currentPlayerId);
+        int nextIndex = (currentIndex + 1) % seatOrder.size();
+        currentPlayerId = seatOrder.get(nextIndex);
     }
 
     public synchronized void resetGame() {
@@ -129,6 +142,7 @@ public class GameRoom {
         idToPlayer.clear();
         sessionToId.clear();
         table.clear();
+        seatOrder.clear();
         tablePoints = 0;
         lastPlayedPlayerId = null;
     }
