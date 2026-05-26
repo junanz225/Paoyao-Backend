@@ -66,6 +66,9 @@ public class GameSocketHandler extends TextWebSocketHandler {
                 case "play_cards":
                     handlePlayCard(session, payload);
                     break;
+                case "pass":
+                    handlePass(session);
+                    break;
 
                 default:
                     sendError(session, "Unknown message type: " + type);
@@ -85,6 +88,16 @@ public class GameSocketHandler extends TextWebSocketHandler {
         Player player = gameManager.playCards(session, playedCards);
 
         sendHandUpdate(player);
+
+        broadcastGameState();
+    }
+
+    private void handlePass(WebSocketSession session) throws Exception {
+        Player player = gameManager.pass(session);
+
+        if (player == null) {
+            return;
+        }
 
         broadcastGameState();
     }
