@@ -4,6 +4,7 @@ import com.zhaojunan.paoyao_backend.model.entity.Card;
 import com.zhaojunan.paoyao_backend.model.entity.Player;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 public class GameRoom {
 
     private static final int MAX_PLAYERS = 4;
@@ -128,6 +130,11 @@ public class GameRoom {
                 player.setHand(deck.deal(27));
             }
             currentPlayerId = seatOrder.get(0);
+            log.info("Game started. Seat order: {}",
+                    seatOrder.stream()
+                            .map(id -> idToPlayer.get(id).getName())
+                            .toList());
+
         }
     }
 
@@ -135,6 +142,7 @@ public class GameRoom {
         int currentIndex = seatOrder.indexOf(currentPlayerId);
         int nextIndex = (currentIndex + 1) % seatOrder.size();
         currentPlayerId = seatOrder.get(nextIndex);
+        log.info("Turn advanced to: {}", idToPlayer.get(currentPlayerId).getName());
     }
 
     public synchronized void resetGame() {

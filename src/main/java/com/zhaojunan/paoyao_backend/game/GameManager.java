@@ -23,6 +23,7 @@ public class GameManager {
     public Player join(WebSocketSession session, String name) {
         boolean added = room.addPlayer(session, name);
         if (!added) return null;
+        log.info("Player '{}' joined the room", name);
         return room.getPlayer(session);
     }
 
@@ -37,7 +38,8 @@ public class GameManager {
             room.addToTable(cards);
             room.setLastPlayedPlayerId(player.getId());
             room.advanceTurn();
-
+            log.info("Player '{}' played: {}", player.getName(),
+                    cards.stream().map(Card::toString).toList());
             return player;
 
         } catch (Exception e) {
@@ -51,6 +53,7 @@ public class GameManager {
         try {
             Player player = validateTurn(session);
             room.advanceTurn();
+            log.info("Player '{}' passed", player.getName());
             return player;
         } catch (Exception e) {
             log.error("Pass failed: {}", e.getMessage());
