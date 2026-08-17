@@ -185,7 +185,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
 
         GameStatePayload gameStatePayload = GameStatePayload.builder()
                 .playerStates(playerStates)
-                .currentTurnPlayerId(null)
+                .currentTurnPlayerId(Objects.toString(gameManager.getRoom().getCurrentPlayerId(), null))
                 .tableState(tableState)
                 .tablePoints(gameManager.getRoom().getTablePoints())
                 .build();
