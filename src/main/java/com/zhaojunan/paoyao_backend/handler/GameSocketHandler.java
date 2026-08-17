@@ -87,8 +87,11 @@ public class GameSocketHandler extends TextWebSocketHandler {
         List<Card> playedCards = request.getPlayedCards().stream().map(Card::fromString).toList();
         Player player = gameManager.playCards(session, playedCards);
 
-        sendHandUpdate(player);
+        if (player == null) {
+            return;
+        }
 
+        sendHandUpdate(player);
         broadcastGameState();
     }
 

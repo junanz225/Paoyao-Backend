@@ -41,9 +41,7 @@ public class GameManager {
             log.info("Player '{}' played: {}", player.getName(),
                     cards.stream().map(Card::toString).toList());
             return player;
-
-        } catch (Exception e) {
-            log.error("PlayCards failed: {}", e.getMessage());
+        } catch (GameActionException e) {
             sendError(session, e.getMessage());
             return null;
         }
@@ -55,8 +53,7 @@ public class GameManager {
             room.advanceTurn();
             log.info("Player '{}' passed", player.getName());
             return player;
-        } catch (Exception e) {
-            log.error("Pass failed: {}", e.getMessage());
+        } catch (GameActionException e) {
             sendError(session, e.getMessage());
             return null;
         }
@@ -69,11 +66,12 @@ public class GameManager {
     private Player validateTurn(WebSocketSession session) {
         Player player = room.getPlayer(session);
         if (player == null) {
-            log.error("Player not found for session: {}", session.getId());
+            log.warn("Play/pass rejected: no player found for session {}", session.getId());
             throw new GameActionException("Player not found");
         }
         if (!room.getCurrentPlayerId().equals(player.getId())) {
-            log.error("Not {}'s turn", player.getName());
+            log.warn("Player '{}' tried to act but it's not '{}''s turn",
+                    player.getName(), player.getName());
             throw new GameActionException("Not your turn");
         }
         return player;
