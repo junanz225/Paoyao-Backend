@@ -126,15 +126,18 @@ public class GameRoom {
             table.clear();
             Deck deck = new Deck();
             deck.shuffle();
-            for (Player player : idToPlayer.values()) {
+
+            for (int i = 0; i < seatOrder.size(); i++) {
+                Player player = idToPlayer.get(seatOrder.get(i));
                 player.setHand(deck.deal(27));
+                player.setTeam(i % 2); // seats 0,2 -> team 0; seats 1,3 -> team 1
             }
+
             currentPlayerId = seatOrder.get(0);
             log.info("Game started. Seat order: {}",
                     seatOrder.stream()
                             .map(id -> idToPlayer.get(id).getName())
                             .toList());
-
         }
     }
 

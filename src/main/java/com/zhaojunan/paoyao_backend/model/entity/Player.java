@@ -26,6 +26,7 @@ public class Player {
     private String name;
     private WebSocketSession session;
     private List<Card> hand = new ArrayList<>();
+    private int team; // 0 or 1
 
     public void removeCards(List<Card> cards) {
         List<Card> mutableHand = new ArrayList<>(hand);
