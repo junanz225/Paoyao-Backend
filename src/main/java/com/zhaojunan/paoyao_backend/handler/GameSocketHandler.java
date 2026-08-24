@@ -23,6 +23,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 @Component
 @Slf4j
@@ -100,6 +101,11 @@ public class GameSocketHandler extends TextWebSocketHandler {
 
         if (player == null) {
             return;
+        }
+
+        UUID roundWinnerId = gameManager.getRoom().consumeRoundWinnerId();
+        if (roundWinnerId != null) {
+            broadcastRoundEnd(roundWinnerId);
         }
 
         broadcastGameState();
@@ -196,6 +202,23 @@ public class GameSocketHandler extends TextWebSocketHandler {
                 .build();
 
         broadcast(gameState);
+    }
+
+    private void broadcastRoundEnd(UUID winnerId) throws Exception {
+        Player winner = gameManager.getPlayers().stream()
+                .filter(p -> p.getId().equals(winnerId))
+                .findFirst()
+                .orElse(null);
+
+        WebSocketMessage<Map<String, String>> msg = WebSocketMessage.<Map<String, String>>builder()
+                .type("round_end")
+                .payload(Map.of(
+                        "winnerId", winnerId.toString(),
+                        "winnerName", winner != null ? winner.getName() : "Unknown"
+                ))
+                .build();
+
+        broadcast(msg);
     }
 
     private void sendDealCards() throws Exception {

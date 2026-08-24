@@ -34,6 +34,12 @@ public class GameRoom {
     @Getter @Setter
     private UUID lastPlayedPlayerId;
 
+    @Getter
+    private int passCount = 0;
+
+    @Getter
+    private UUID roundWinnerId; // set when a round completes; consumed by the handler
+
     @Getter @Setter
     private List<Card> table = new ArrayList<>();
 
@@ -148,6 +154,29 @@ public class GameRoom {
         log.info("Turn advanced to: {}", idToPlayer.get(currentPlayerId).getName());
     }
 
+    public synchronized void registerPlay() {
+        passCount = 0;
+    }
+
+    public synchronized void registerPass() {
+        if (lastPlayedPlayerId == null) return; // nobody has played yet this round
+        passCount++;
+        if (passCount >= 3) {
+            roundWinnerId = lastPlayedPlayerId;
+            table.clear();
+            passCount = 0;
+            lastPlayedPlayerId = null;
+            log.info("Round complete. Winner: {}",  idToPlayer.get(roundWinnerId).getName());
+        }
+    }
+
+    public synchronized UUID consumeRoundWinnerId() {
+        UUID winner = roundWinnerId;
+        roundWinnerId = null;
+        return winner;
+    }
+
+
     public synchronized void resetGame() {
         gameStarted = false;
         idToPlayer.clear();
@@ -156,5 +185,7 @@ public class GameRoom {
         seatOrder.clear();
         tablePoints = 0;
         lastPlayedPlayerId = null;
+        passCount = 0;
+        roundWinnerId = null;
     }
 }

@@ -37,6 +37,7 @@ public class GameManager {
             player.removeCards(cards);
             room.addToTable(cards);
             room.setLastPlayedPlayerId(player.getId());
+            room.registerPlay();
             room.advanceTurn();
             log.info("Player '{}' played: {}", player.getName(),
                     cards.stream().map(Card::toString).toList());
@@ -50,6 +51,7 @@ public class GameManager {
     public Player pass(WebSocketSession session) {
         try {
             Player player = validateTurn(session);
+            room.registerPass();
             room.advanceTurn();
             log.info("Player '{}' passed", player.getName());
             return player;
