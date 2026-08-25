@@ -6,9 +6,11 @@ import com.zhaojunan.paoyao_backend.model.enumeration.Rank;
 import com.zhaojunan.paoyao_backend.model.enumeration.Suit;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 
 @Builder
 @EqualsAndHashCode
+@Getter
 public class Card {
 
     private CardType type;

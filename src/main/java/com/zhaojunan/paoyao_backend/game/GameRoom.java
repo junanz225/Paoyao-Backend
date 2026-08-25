@@ -47,6 +47,8 @@ public class GameRoom {
     @Getter @Setter
     private int tablePoints = 0;
 
+    private final Map<Integer, Integer> teamScores = new HashMap<>();
+
     private boolean gameStarted = false;
 
     // -------------------------------------------------------------------------
@@ -134,6 +136,9 @@ public class GameRoom {
             Deck deck = new Deck();
             deck.shuffle();
 
+            teamScores.put(0, 0);
+            teamScores.put(1, 0);
+
             for (int i = 0; i < seatOrder.size(); i++) {
                 Player player = idToPlayer.get(seatOrder.get(i));
                 player.setHand(deck.deal(27));
@@ -171,6 +176,14 @@ public class GameRoom {
         }
     }
 
+    public synchronized void addTeamScore(int team, int points) {
+        teamScores.merge(team, points, Integer::sum);
+    }
+
+    public synchronized Map<Integer, Integer> getTeamScores() {
+        return Collections.unmodifiableMap(teamScores);
+    }
+
     public synchronized UUID consumeRoundWinnerId() {
         UUID winner = roundWinnerId;
         roundWinnerId = null;
@@ -188,5 +201,6 @@ public class GameRoom {
         lastPlayedPlayerId = null;
         passCount = 0;
         roundWinnerId = null;
+        teamScores.clear();
     }
 }
