@@ -210,11 +210,12 @@ public class GameSocketHandler extends TextWebSocketHandler {
                 .findFirst()
                 .orElse(null);
 
-        WebSocketMessage<Map<String, String>> msg = WebSocketMessage.<Map<String, String>>builder()
+        WebSocketMessage<Map<String, Object>> msg = WebSocketMessage.<Map<String, Object>>builder()
                 .type("round_end")
                 .payload(Map.of(
                         "winnerId", winnerId.toString(),
-                        "winnerName", winner != null ? winner.getName() : "Unknown"
+                        "winnerName", winner != null ? winner.getName() : "Unknown",
+                        "teamScores", gameManager.getRoom().getTeamScores()
                 ))
                 .build();
 

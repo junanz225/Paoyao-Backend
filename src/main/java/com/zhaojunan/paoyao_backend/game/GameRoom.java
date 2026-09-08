@@ -169,6 +169,11 @@ public class GameRoom {
         passCount++;
         if (passCount >= 3) {
             roundWinnerId = lastPlayedPlayerId;
+
+            int points = table.stream().mapToInt(Card::getPoint).sum();
+            int winnerTeam = idToPlayer.get(roundWinnerId).getTeam();
+            addTeamScore(winnerTeam, points);
+
             table.clear();
             passCount = 0;
             lastPlayedPlayerId = null;
