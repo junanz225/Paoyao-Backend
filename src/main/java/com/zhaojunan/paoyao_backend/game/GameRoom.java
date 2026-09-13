@@ -44,8 +44,9 @@ public class GameRoom {
     @Getter @Setter
     private List<Card> table = new ArrayList<>();
 
-    @Getter @Setter
-    private int tablePoints = 0;
+    public synchronized int getTablePoints() {
+        return table.stream().mapToInt(Card::getPoint).sum();
+    }
 
     private final Map<Integer, Integer> teamScores = new HashMap<>();
 
@@ -202,7 +203,6 @@ public class GameRoom {
         sessionToId.clear();
         table.clear();
         seatOrder.clear();
-        tablePoints = 0;
         lastPlayedPlayerId = null;
         passCount = 0;
         roundWinnerId = null;
