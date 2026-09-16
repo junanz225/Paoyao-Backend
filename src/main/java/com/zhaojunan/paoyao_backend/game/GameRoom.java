@@ -44,9 +44,8 @@ public class GameRoom {
     @Getter @Setter
     private List<Card> table = new ArrayList<>();
 
-    public synchronized int getTablePoints() {
-        return table.stream().mapToInt(Card::getPoint).sum();
-    }
+    @Getter
+    private int tablePoints = 0;
 
     private final Map<Integer, Integer> teamScores = new HashMap<>();
 
@@ -128,6 +127,7 @@ public class GameRoom {
     public synchronized void addToTable(List<Card> cards) {
         table.clear();
         table.addAll(cards);
+        tablePoints += cards.stream().mapToInt(Card::getPoint).sum();
     }
 
     public synchronized void startGame() {
@@ -171,11 +171,11 @@ public class GameRoom {
         if (passCount >= 3) {
             roundWinnerId = lastPlayedPlayerId;
 
-            int points = table.stream().mapToInt(Card::getPoint).sum();
             int winnerTeam = idToPlayer.get(roundWinnerId).getTeam();
-            addTeamScore(winnerTeam, points);
+            addTeamScore(winnerTeam, tablePoints);
 
             table.clear();
+            tablePoints = 0;
             passCount = 0;
             lastPlayedPlayerId = null;
             log.info("Round complete. Winner: {}",  idToPlayer.get(roundWinnerId).getName());
@@ -202,6 +202,7 @@ public class GameRoom {
         idToPlayer.clear();
         sessionToId.clear();
         table.clear();
+        tablePoints = 0;
         seatOrder.clear();
         lastPlayedPlayerId = null;
         passCount = 0;
