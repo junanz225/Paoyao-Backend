@@ -51,6 +51,12 @@ public class GameManager {
     public Player pass(WebSocketSession session) {
         try {
             Player player = validateTurn(session);
+
+            if (room.getLastPlayedPlayerId() == null) {
+                log.warn("Player '{}' tried to pass as round starter", player.getName());
+                throw new GameActionException("You must play — you're leading this round");
+            }
+
             room.registerPass();
             room.advanceTurn();
             log.info("Player '{}' passed", player.getName());
