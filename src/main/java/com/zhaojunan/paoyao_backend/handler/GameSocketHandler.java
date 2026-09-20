@@ -168,6 +168,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
                         .playerId(player.getId().toString())
                         .playerName(player.getName())
                         .cardCount(player.getHandSize())
+                        .team(player.getTeam())
                         .build()
                 )
                 .toList();

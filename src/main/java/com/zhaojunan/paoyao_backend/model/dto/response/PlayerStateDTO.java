@@ -10,5 +10,6 @@ public class PlayerStateDTO {
     private String playerId;
     private String playerName;
     private int cardCount;
+    private int team;
 
 }
