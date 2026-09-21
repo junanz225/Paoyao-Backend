@@ -2,6 +2,7 @@ package com.zhaojunan.paoyao_backend.game;
 
 import com.zhaojunan.paoyao_backend.model.entity.Card;
 import com.zhaojunan.paoyao_backend.model.entity.Player;
+import com.zhaojunan.paoyao_backend.model.enumeration.WinReason;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -11,9 +12,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Slf4j
@@ -40,6 +43,20 @@ public class GameRoom {
 
     @Getter
     private UUID roundWinnerId; // set when a round completes; consumed by the handler
+
+    // --- new fields ---
+    private final Set<UUID> emptiedPlayers = new HashSet<>();
+    private UUID firstEmptiedPlayerId;
+    private Integer firstEmptiedTeam; // team of the first player ever to empty their hand
+
+    @Getter
+    private boolean gameOver = false;
+
+    @Getter
+    private Integer winningTeam;      // 0 or 1
+
+    @Getter
+    private WinReason winReason;         // "FIRST_EMPTIER_90" | "SCORE_140" | "DOUBLE_OUT"
 
     @Getter @Setter
     private List<Card> table = new ArrayList<>();
@@ -156,7 +173,13 @@ public class GameRoom {
 
     public synchronized void advanceTurn() {
         int currentIndex = seatOrder.indexOf(currentPlayerId);
-        int nextIndex = (currentIndex + 1) % seatOrder.size();
+        int nextIndex = currentIndex;
+        int attempts = 0;
+        do {
+            nextIndex = (nextIndex + 1) % seatOrder.size();
+            attempts++;
+        } while (idToPlayer.get(seatOrder.get(nextIndex)).getHand().isEmpty()
+                && attempts <= seatOrder.size());
         currentPlayerId = seatOrder.get(nextIndex);
         log.info("Turn advanced to: {}", idToPlayer.get(currentPlayerId).getName());
     }
@@ -166,19 +189,20 @@ public class GameRoom {
     }
 
     public synchronized void registerPass() {
-        if (lastPlayedPlayerId == null) return; // nobody has played yet this round
+        if (lastPlayedPlayerId == null) return;
         passCount++;
-        if (passCount >= 3) {
+        if (passCount >= countActivePlayers() - 1) {
             roundWinnerId = lastPlayedPlayerId;
 
             int winnerTeam = idToPlayer.get(roundWinnerId).getTeam();
             addTeamScore(winnerTeam, tablePoints);
+            checkScoreWinConditions(winnerTeam); // <-- this was missing
 
             table.clear();
             tablePoints = 0;
             passCount = 0;
             lastPlayedPlayerId = null;
-            log.info("Round complete. Winner: {}",  idToPlayer.get(roundWinnerId).getName());
+            log.info("Round complete. Winner: {}", idToPlayer.get(roundWinnerId).getName());
         }
     }
 
@@ -196,6 +220,64 @@ public class GameRoom {
         return winner;
     }
 
+    public synchronized void registerHandEmptied(UUID playerId) {
+        if (gameOver || emptiedPlayers.contains(playerId)) return;
+
+        emptiedPlayers.add(playerId);
+        int team = idToPlayer.get(playerId).getTeam();
+
+        if (firstEmptiedPlayerId == null) {
+            firstEmptiedPlayerId = playerId;
+            firstEmptiedTeam = team;
+
+            // Condition 1 can fire right here: this team may already have
+            // banked >= 90 points from earlier rounds, in which case they
+            // win the instant "first emptier" status is established --
+            // no need to wait for this round to finish.
+            if (teamScores.get(team) >= 90) {
+                gameOver = true;
+                winningTeam = team;
+                winReason = WinReason.FIRST_EMPTIER_90;
+                return;
+            }
+        }
+
+        // Condition 3: both players on this team have emptied their hands
+        long teamEmptiedCount = emptiedPlayers.stream()
+                .map(idToPlayer::get)
+                .filter(p -> p.getTeam() == team)
+                .count();
+
+        if (teamEmptiedCount >= 2) {
+            gameOver = true;
+            winningTeam = team;
+            winReason = WinReason.DOUBLE_OUT;
+        }
+    }
+
+    /** Call right after addTeamScore() awards a round's points to `scoringTeam`. */
+    public synchronized void checkScoreWinConditions(int scoringTeam) {
+        if (gameOver) return;
+
+        if (teamScores.get(scoringTeam) >= 140) {
+            gameOver = true;
+            winningTeam = scoringTeam;
+            winReason = WinReason.SCORE_140;
+            return;
+        }
+
+        if (firstEmptiedTeam != null
+                && scoringTeam == firstEmptiedTeam
+                && teamScores.get(scoringTeam) >= 90) {
+            gameOver = true;
+            winningTeam = scoringTeam;
+            winReason = WinReason.FIRST_EMPTIER_90;
+        }
+    }
+
+    private int countActivePlayers() {
+        return seatOrder.size() - emptiedPlayers.size();
+    }
 
     public synchronized void resetGame() {
         gameStarted = false;
@@ -205,6 +287,9 @@ public class GameRoom {
         tablePoints = 0;
         seatOrder.clear();
         lastPlayedPlayerId = null;
+        emptiedPlayers.clear();
+        firstEmptiedPlayerId = null;
+        firstEmptiedTeam = null;
         passCount = 0;
         roundWinnerId = null;
         teamScores.clear();

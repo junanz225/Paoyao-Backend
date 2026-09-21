@@ -33,12 +33,22 @@ public class GameManager {
 
     public Player playCards(WebSocketSession session, List<Card> cards) {
         try {
+            if (room.isGameOver()) {
+                sendError(session, "Game has ended.");
+                return null;
+            }
             Player player = validateTurn(session);
             player.removeCards(cards);
             room.addToTable(cards);
             room.setLastPlayedPlayerId(player.getId());
             room.registerPlay();
-            room.advanceTurn();
+            if (player.getHand().isEmpty()) {
+                room.registerHandEmptied(player.getId());
+            }
+
+            if (!room.isGameOver()) {
+                room.advanceTurn(); // wherever this already happens
+            }
             log.info("Player '{}' played: {}", player.getName(),
                     cards.stream().map(Card::toString).toList());
             return player;
@@ -50,15 +60,20 @@ public class GameManager {
 
     public Player pass(WebSocketSession session) {
         try {
+            if (room.isGameOver()) {
+                sendError(session, "Game has ended.");
+                return null;
+            }
             Player player = validateTurn(session);
 
             if (room.getLastPlayedPlayerId() == null) {
-                log.warn("Player '{}' tried to pass as round starter", player.getName());
                 throw new GameActionException("You must play — you're leading this round");
             }
 
             room.registerPass();
-            room.advanceTurn();
+            if (!room.isGameOver()) {
+                room.advanceTurn();
+            }
             log.info("Player '{}' passed", player.getName());
             return player;
         } catch (GameActionException e) {
