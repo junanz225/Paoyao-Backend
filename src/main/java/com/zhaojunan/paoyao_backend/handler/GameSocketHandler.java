@@ -2,9 +2,11 @@ package com.zhaojunan.paoyao_backend.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zhaojunan.paoyao_backend.game.GameManager;
+import com.zhaojunan.paoyao_backend.game.GameRoom;
 import com.zhaojunan.paoyao_backend.mapper.PlayerMapper;
 import com.zhaojunan.paoyao_backend.model.dto.request.JoinRequest;
 import com.zhaojunan.paoyao_backend.model.dto.request.PlayCardRequest;
+import com.zhaojunan.paoyao_backend.model.dto.response.GameEndPayload;
 import com.zhaojunan.paoyao_backend.model.dto.response.PlayerHandPayload;
 import com.zhaojunan.paoyao_backend.model.dto.response.GameStatePayload;
 import com.zhaojunan.paoyao_backend.model.dto.response.PlayerDTO;
@@ -94,6 +96,7 @@ public class GameSocketHandler extends TextWebSocketHandler {
 
         sendHandUpdate(player);
         broadcastGameState();
+        broadcastGameEndIfOver();
     }
 
     private void handlePass(WebSocketSession session) throws Exception {
@@ -109,6 +112,25 @@ public class GameSocketHandler extends TextWebSocketHandler {
         }
 
         broadcastGameState();
+        broadcastGameEndIfOver();
+    }
+
+    private void broadcastGameEndIfOver() throws Exception {
+        GameRoom room = gameManager.getRoom();
+        if (!room.isGameOver()) return;
+
+        GameEndPayload payload = GameEndPayload.builder()
+                .winningTeam(room.getWinningTeam())
+                .winReason(room.getWinReason())
+                .teamScores(room.getTeamScores())
+                .build();
+
+        WebSocketMessage<GameEndPayload> msg = WebSocketMessage.<GameEndPayload>builder()
+                .type("game_end")
+                .payload(payload)
+                .build();
+
+        broadcast(msg);
     }
 
     private void handleJoin(WebSocketSession session, Map<String, Object> json) throws Exception {
