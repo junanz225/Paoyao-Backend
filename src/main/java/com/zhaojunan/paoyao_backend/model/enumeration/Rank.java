@@ -7,24 +7,26 @@ import java.util.Arrays;
 @Getter
 public enum Rank {
 
-    A("ace"),
-    TWO("2"),
-    THREE("3"),
-    FOUR("4"),
-    FIVE("5"),
-    SIX("6"),
-    SEVEN("7"),
-    EIGHT("8"),
-    NINE("9"),
-    TEN("10"),
-    J("jack"),
-    Q("queen"),
-    K("king");
+    FOUR("4", 0),
+    FIVE("5", 1),
+    SIX("6", 2),
+    SEVEN("7", 3),
+    EIGHT("8", 4),
+    NINE("9", 5),
+    TEN("10", 6),
+    J("jack", 7),
+    Q("queen", 8),
+    K("king", 9),
+    A("ace", 10),
+    TWO("2", 11),
+    THREE("3", 12);
 
     private final String value;
+    private final int strength;
 
-    Rank(String value) {
+    Rank(String value, int strength) {
         this.value = value;
+        this.strength = strength;
     }
 
     public static Rank fromValue(String value) {

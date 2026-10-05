@@ -64,4 +64,8 @@ public class Card {
                 .build();
     }
 
+    public int getStrength() {
+        return type == CardType.JOKER ? jokerType.getStrength() : rank.getStrength();
+    }
+
 }

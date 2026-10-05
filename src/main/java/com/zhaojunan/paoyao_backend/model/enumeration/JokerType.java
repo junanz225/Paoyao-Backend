@@ -6,13 +6,15 @@ import java.util.Arrays;
 @Getter
 public enum JokerType {
 
-    RED("red_joker"),
-    BLACK("black_joker");
+    BLACK("black_joker", 13),
+    RED("red_joker", 14);
 
     private final String fileName;
+    private final int strength;
 
-    JokerType(String fileName) {
+    JokerType(String fileName, int strength) {
         this.fileName = fileName;
+        this.strength = strength;
     }
 
     public static JokerType fromFileName(String fileName) {
