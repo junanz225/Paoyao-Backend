@@ -13,6 +13,8 @@ public class CombinationClassifier {
     private static final int MIN_STRAIGHT_RANKS = 3;
     // Straights only run 4..A; 2, 3 and jokers all have strength above A
     private static final int MAX_STRAIGHT_STRENGTH = Rank.A.getStrength();
+    private static final int MIN_BOMB_SIZE = 3;
+    private static final int MAX_BOMB_SIZE = 8; // two decks = eight copies of a rank
 
     public static CardCombination classify(List<Card> cards) {
         if (cards == null) {
@@ -36,6 +38,11 @@ public class CombinationClassifier {
             if (!eitherIsJoker && first.getRank() == second.getRank()) {
                 return new CardCombination(CombinationType.PAIR, cards, first.getStrength(), 2);
             }
+        }
+
+        CardCombination bomb = classifyNormalBomb(cards);
+        if (bomb != null) {
+            return bomb;
         }
 
         return classifyStraight(cards); // returns null if not a straight either
@@ -84,5 +91,30 @@ public class CombinationClassifier {
                 : CombinationType.DOUBLE_STRAIGHT;
 
         return new CardCombination(type, cards, max, cards.size());
+    }
+
+    /**
+     * Normal bomb: 3 to 8 cards of the same rank (jokers excluded; joker bombs
+     * and rockets are recognized in Step 5). Tier = card count, and the rank
+     * orders bombs within the same tier (444 < 555 < ... < 333).
+     */
+    private static CardCombination classifyNormalBomb(List<Card> cards) {
+        int size = cards.size();
+        if (size < MIN_BOMB_SIZE || size > MAX_BOMB_SIZE) {
+            return null;
+        }
+
+        Rank rank = cards.get(0).getRank(); // null for a joker
+        if (rank == null) {
+            return null;
+        }
+        for (Card card : cards) {
+            if (card.getRank() != rank) {
+                return null; // mixed ranks, or a joker in the mix
+            }
+        }
+
+        int strength = size * CardCombination.BOMB_TIER_SCALE + rank.getStrength();
+        return new CardCombination(CombinationType.BOMB, cards, strength, size);
     }
 }
