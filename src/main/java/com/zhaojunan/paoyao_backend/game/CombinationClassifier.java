@@ -20,6 +20,8 @@ public class CombinationClassifier {
     private static final int MAX_JOKER_BOMB_SIZE = 4; // two decks = four jokers
     private static final int BLACK_JOKER_HALF_POINTS = 3; // 1.5 points
     private static final int RED_JOKER_HALF_POINTS = 5;   // 2.5 points
+    private static final int MIN_ROCKET_FOURS = 2;
+    private static final int MAX_ROCKET_FOURS = 8;  // two decks = eight 4s
 
     public static CardCombination classify(List<Card> cards) {
         if (cards == null) {
@@ -52,6 +54,10 @@ public class CombinationClassifier {
         CardCombination jokerBomb = classifyJokerBomb(cards);
         if (jokerBomb != null) {
             return jokerBomb;
+        }
+        CardCombination rocket = classifyRocket(cards);
+        if (rocket != null) {
+            return rocket;
         }
 
         return classifyStraight(cards); // returns null if not a straight either
@@ -150,5 +156,40 @@ public class CombinationClassifier {
         int tier = (halfPoints + 1) / 2; // integer division rounds .5 up
         int strength = tier * CardCombination.BOMB_TIER_SCALE + CardCombination.JOKER_BOMB_WITHIN_TIER;
         return new CardCombination(CombinationType.JOKER_BOMB, cards, strength, size);
+    }
+
+    /**
+     * Rocket ("Yao"): exactly one A plus 2 to 8 fours. Tier = 2 x (number of fours),
+     * so A44 = tier 4, A444 = tier 6, A4444 = tier 8, and anything bigger is above
+     * every other bomb in the game.
+     */
+    private static CardCombination classifyRocket(List<Card> cards) {
+        int size = cards.size();
+        if (size < MIN_ROCKET_FOURS + 1 || size > MAX_ROCKET_FOURS + 1) {
+            return null;
+        }
+
+        int aces = 0;
+        int fours = 0;
+        for (Card card : cards) {
+            if (card.getType() == CardType.JOKER) {
+                return null;
+            }
+            if (card.getRank() == Rank.A) {
+                aces++;
+            } else if (card.getRank() == Rank.FOUR) {
+                fours++;
+            } else {
+                return null;
+            }
+        }
+
+        if (aces != 1) {
+            return null; // exactly one A allowed
+        }
+
+        int tier = 2 * fours;
+        int strength = tier * CardCombination.BOMB_TIER_SCALE + CardCombination.ROCKET_WITHIN_TIER;
+        return new CardCombination(CombinationType.ROCKET, cards, strength, size);
     }
 }
