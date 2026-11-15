@@ -4,6 +4,7 @@ import com.zhaojunan.paoyao_backend.model.entity.Card;
 import com.zhaojunan.paoyao_backend.model.entity.CardCombination;
 import com.zhaojunan.paoyao_backend.model.enumeration.CardType;
 import com.zhaojunan.paoyao_backend.model.enumeration.CombinationType;
+import com.zhaojunan.paoyao_backend.model.enumeration.JokerType;
 import com.zhaojunan.paoyao_backend.model.enumeration.Rank;
 
 import java.util.List;
@@ -15,6 +16,10 @@ public class CombinationClassifier {
     private static final int MAX_STRAIGHT_STRENGTH = Rank.A.getStrength();
     private static final int MIN_BOMB_SIZE = 3;
     private static final int MAX_BOMB_SIZE = 8; // two decks = eight copies of a rank
+    private static final int MIN_JOKER_BOMB_SIZE = 2;
+    private static final int MAX_JOKER_BOMB_SIZE = 4; // two decks = four jokers
+    private static final int BLACK_JOKER_HALF_POINTS = 3; // 1.5 points
+    private static final int RED_JOKER_HALF_POINTS = 5;   // 2.5 points
 
     public static CardCombination classify(List<Card> cards) {
         if (cards == null) {
@@ -43,6 +48,10 @@ public class CombinationClassifier {
         CardCombination bomb = classifyNormalBomb(cards);
         if (bomb != null) {
             return bomb;
+        }
+        CardCombination jokerBomb = classifyJokerBomb(cards);
+        if (jokerBomb != null) {
+            return jokerBomb;
         }
 
         return classifyStraight(cards); // returns null if not a straight either
@@ -116,5 +125,30 @@ public class CombinationClassifier {
 
         int strength = size * CardCombination.BOMB_TIER_SCALE + rank.getStrength();
         return new CardCombination(CombinationType.BOMB, cards, strength, size);
+    }
+
+    /**
+     * Joker bomb: 2 to 4 cards, all jokers. Points are summed (Black 1.5, Red 2.5)
+     * and rounded up; that number is the tier the bomb is the greatest of.
+     */
+    private static CardCombination classifyJokerBomb(List<Card> cards) {
+        int size = cards.size();
+        if (size < MIN_JOKER_BOMB_SIZE || size > MAX_JOKER_BOMB_SIZE) {
+            return null;
+        }
+
+        int halfPoints = 0;
+        for (Card card : cards) {
+            if (card.getType() != CardType.JOKER) {
+                return null;
+            }
+            halfPoints += card.getJokerType() == JokerType.BLACK
+                    ? BLACK_JOKER_HALF_POINTS
+                    : RED_JOKER_HALF_POINTS;
+        }
+
+        int tier = (halfPoints + 1) / 2; // integer division rounds .5 up
+        int strength = tier * CardCombination.BOMB_TIER_SCALE + CardCombination.JOKER_BOMB_WITHIN_TIER;
+        return new CardCombination(CombinationType.JOKER_BOMB, cards, strength, size);
     }
 }

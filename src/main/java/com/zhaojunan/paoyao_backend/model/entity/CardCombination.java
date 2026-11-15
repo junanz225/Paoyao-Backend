@@ -21,6 +21,10 @@ public class CardCombination {
     // and to distinguish e.g. a 3-card bomb from a 4-card bomb before tier comparison.
     private final int length;
     public static final int BOMB_TIER_SCALE = 100;
+    // Within-tier values for bombs. Normal bombs use their rank strength (0..12),
+    // so these sit above every normal bomb of the same tier.
+    public static final int JOKER_BOMB_WITHIN_TIER = 13;
+    public static final int ROCKET_WITHIN_TIER = 14;
 
     public CardCombination(CombinationType type, List<Card> cards, int strength, int length) {
         this.type = type;
