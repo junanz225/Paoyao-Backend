@@ -45,9 +45,13 @@ public class CardCombination {
     }
 
     // Number of distinct ranks a straight spans (456 = 3, 445566 = 3).
-// Only meaningful for SINGLE_STRAIGHT / DOUBLE_STRAIGHT.
+    // Only meaningful for SINGLE_STRAIGHT / DOUBLE_STRAIGHT.
     public int getRankSpan() {
         return type == CombinationType.DOUBLE_STRAIGHT ? length / 2 : length;
+    }
+
+    public int getPoints() {
+        return cards.stream().mapToInt(Card::getPoint).sum();
     }
 
 }

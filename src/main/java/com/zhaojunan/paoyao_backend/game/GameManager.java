@@ -1,6 +1,7 @@
 package com.zhaojunan.paoyao_backend.game;
 
 import com.zhaojunan.paoyao_backend.exception.GameActionException;
+import com.zhaojunan.paoyao_backend.model.entity.CardCombination;
 import com.zhaojunan.paoyao_backend.model.entity.Player;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -38,8 +39,15 @@ public class GameManager {
                 return null;
             }
             Player player = validateTurn(session);
+            CardCombination play = CombinationClassifier.classify(cards);
+            if (play == null) {
+                throw new GameActionException("That's not a valid card combination");
+            }
+            if (!CombinationComparator.beats(room.getTableCombination(), play)) {
+                throw new GameActionException("Your cards don't beat the cards on the table");
+            }
             player.removeCards(cards);
-            room.addToTable(cards);
+            room.addToTable(play);
             room.setLastPlayedPlayerId(player.getId());
             room.registerPlay();
             if (player.getHand().isEmpty()) {

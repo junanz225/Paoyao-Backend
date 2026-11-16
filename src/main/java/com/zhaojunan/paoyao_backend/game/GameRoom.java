@@ -1,6 +1,7 @@
 package com.zhaojunan.paoyao_backend.game;
 
 import com.zhaojunan.paoyao_backend.model.entity.Card;
+import com.zhaojunan.paoyao_backend.model.entity.CardCombination;
 import com.zhaojunan.paoyao_backend.model.entity.Player;
 import com.zhaojunan.paoyao_backend.model.enumeration.WinReason;
 import lombok.Getter;
@@ -60,6 +61,9 @@ public class GameRoom {
 
     @Getter @Setter
     private List<Card> table = new ArrayList<>();
+
+    @Getter
+    private CardCombination tableCombination; // null = empty table (next player leads)
 
     @Getter
     private int tablePoints = 0;
@@ -141,16 +145,18 @@ public class GameRoom {
         return gameStarted;
     }
 
-    public synchronized void addToTable(List<Card> cards) {
+    public synchronized void addToTable(CardCombination combo) {
+        tableCombination = combo;
         table.clear();
-        table.addAll(cards);
-        tablePoints += cards.stream().mapToInt(Card::getPoint).sum();
+        table.addAll(combo.getCards());
+        tablePoints += combo.getPoints();
     }
 
     public synchronized void startGame() {
         if (isRoomFull() && !gameStarted) {
             gameStarted = true;
             table.clear();
+            tableCombination = null;
             Deck deck = new Deck();
             deck.shuffle();
 
@@ -199,6 +205,7 @@ public class GameRoom {
             checkScoreWinConditions(winnerTeam); // <-- this was missing
 
             table.clear();
+            tableCombination = null;
             tablePoints = 0;
             passCount = 0;
             lastPlayedPlayerId = null;
@@ -284,6 +291,7 @@ public class GameRoom {
         idToPlayer.clear();
         sessionToId.clear();
         table.clear();
+        tableCombination = null;
         tablePoints = 0;
         seatOrder.clear();
         lastPlayedPlayerId = null;
