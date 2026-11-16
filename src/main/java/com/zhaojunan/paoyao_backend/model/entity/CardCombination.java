@@ -38,4 +38,16 @@ public class CardCombination {
         return strength / BOMB_TIER_SCALE;
     }
 
+    public boolean isBomb() {
+        return type == CombinationType.BOMB
+                || type == CombinationType.JOKER_BOMB
+                || type == CombinationType.ROCKET;
+    }
+
+    // Number of distinct ranks a straight spans (456 = 3, 445566 = 3).
+// Only meaningful for SINGLE_STRAIGHT / DOUBLE_STRAIGHT.
+    public int getRankSpan() {
+        return type == CombinationType.DOUBLE_STRAIGHT ? length / 2 : length;
+    }
+
 }
