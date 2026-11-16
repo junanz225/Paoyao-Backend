@@ -59,9 +59,6 @@ public class GameRoom {
     @Getter
     private WinReason winReason;         // "FIRST_EMPTIER_90" | "SCORE_140" | "DOUBLE_OUT"
 
-    @Getter @Setter
-    private List<Card> table = new ArrayList<>();
-
     @Getter
     private CardCombination tableCombination; // null = empty table (next player leads)
 
@@ -147,15 +144,16 @@ public class GameRoom {
 
     public synchronized void addToTable(CardCombination combo) {
         tableCombination = combo;
-        table.clear();
-        table.addAll(combo.getCards());
         tablePoints += combo.getPoints();
+    }
+
+    public synchronized List<Card> getTable() {
+        return tableCombination == null ? List.of() : tableCombination.getCards();
     }
 
     public synchronized void startGame() {
         if (isRoomFull() && !gameStarted) {
             gameStarted = true;
-            table.clear();
             tableCombination = null;
             Deck deck = new Deck();
             deck.shuffle();
@@ -204,7 +202,6 @@ public class GameRoom {
             addTeamScore(winnerTeam, tablePoints);
             checkScoreWinConditions(winnerTeam); // <-- this was missing
 
-            table.clear();
             tableCombination = null;
             tablePoints = 0;
             passCount = 0;
@@ -290,7 +287,6 @@ public class GameRoom {
         gameStarted = false;
         idToPlayer.clear();
         sessionToId.clear();
-        table.clear();
         tableCombination = null;
         tablePoints = 0;
         seatOrder.clear();
