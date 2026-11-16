@@ -1,5 +1,6 @@
 package com.zhaojunan.paoyao_backend.model.entity;
 
+import com.zhaojunan.paoyao_backend.exception.GameActionException;
 import lombok.Builder;
 import lombok.Data;
 import lombok.AllArgsConstructor;
@@ -32,9 +33,8 @@ public class Player {
         List<Card> mutableHand = new ArrayList<>(hand);
 
         for (Card card : cards) {
-            boolean removed = mutableHand.remove(card); // removes only first match
-            if (!removed) {
-                throw new IllegalArgumentException("Invalid play: card not in hand: " + card);
+            if (!mutableHand.remove(card)) {
+                throw new GameActionException("You don't have that card: " + card);
             }
         }
 
